@@ -1,0 +1,19 @@
+<launch>
+	<!-- vins fusion -->
+	<include file="$(find vins_estimator)/launch/vins_mono_d435i.launch" />
+
+  	<node pkg="tf" type="static_transform_publisher" name="map_odom"
+          args="0 0 0 0 0 0 map odom 1000"/>
+
+	<node pkg="tf" type="static_transform_publisher" name="odom_world"
+	          args="0 0 0 0 0 0 odom world 1000"/>
+
+	<node pkg="tf" type="static_transform_publisher" name="bodyPX4_baselink"
+		args="0 0 0 0 0 0 body_px4 base_link 1000" />
+
+	<node pkg="tf" type="static_transform_publisher" name="baselink_cameralink"
+		args="0.07 0.015 0.10 0 0 0 base_link camera_link 1000" />
+
+	<node pkg="vins_estimator" type="vis_traj.py" name="vis_traj" />
+
+</launch>
