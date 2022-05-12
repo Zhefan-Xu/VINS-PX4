@@ -41,7 +41,7 @@ void registerPub(ros::NodeHandle &n)
     pub_margin_cloud = n.advertise<sensor_msgs::PointCloud>("margin_cloud", 1000);
     pub_key_poses = n.advertise<visualization_msgs::Marker>("key_poses", 1000);
     pub_camera_pose = n.advertise<nav_msgs::Odometry>("camera_pose", 1000);
-    pub_pose_px4 = n.advertise<geometry_msgs::PoseStamped>("/mavros/vision_pose/pose", 1000);
+    pub_pose_px4 = n.advertise<geometry_msgs::PoseStamped>("/mavros/vision_pose/pose", 100);
     pub_camera_pose_visual = n.advertise<visualization_msgs::MarkerArray>("camera_pose_visual", 1000);
     pub_keyframe_pose = n.advertise<nav_msgs::Odometry>("keyframe_pose", 1000);
     pub_keyframe_point = n.advertise<sensor_msgs::PointCloud>("keyframe_point", 1000);
@@ -69,6 +69,9 @@ void pubLatestOdometry(const Eigen::Vector3d &P, const Eigen::Quaterniond &Q, co
     odometry.twist.twist.linear.z = V.z();
     pub_latest_odometry.publish(odometry);
 }
+
+
+
 
 void pubTrackImage(const cv::Mat &imgTrack, const double t)
 {
@@ -211,6 +214,43 @@ void pubKeyPoses(const Estimator &estimator, const std_msgs::Header &header)
     pub_key_poses.publish(key_poses);
 }
 
+
+
+void pubCameraPose(const Estimator &estimator, const std_msgs::Header &header)
+{
+    int idx2 = WINDOW_SIZE - 1;
+
+    if (estimator.solver_flag == Estimator::SolverFlag::NON_LINEAR)
+    {
+        int i = idx2;
+        Vector3d P = estimator.Ps[i] + estimator.Rs[i] * estimator.tic[0];
+        Quaterniond R = Quaterniond(estimator.Rs[i] * estimator.ric[0]);
+
+        nav_msgs::Odometry odometry;
+        odometry.header = header;
+        odometry.header.frame_id = "world";
+        odometry.pose.pose.position.x = P.x();
+        odometry.pose.pose.position.y = P.y();
+        odometry.pose.pose.position.z = P.z();
+        odometry.pose.pose.orientation.x = R.x();
+        odometry.pose.pose.orientation.y = R.y();
+        odometry.pose.pose.orientation.z = R.z();
+        odometry.pose.pose.orientation.w = R.w();
+
+        pub_camera_pose.publish(odometry);
+
+        cameraposevisual.reset();
+        cameraposevisual.add_pose(P, R);
+        if(STEREO)
+        {
+            Vector3d P = estimator.Ps[i] + estimator.Rs[i] * estimator.tic[1];
+            Quaterniond R = Quaterniond(estimator.Rs[i] * estimator.ric[1]);
+            cameraposevisual.add_pose(P, R);
+        }
+        cameraposevisual.publish_by(pub_camera_pose_visual, odometry.header);
+    }
+}
+
 void pubPosePX4(const Estimator &estimator, const std_msgs::Header &header)
 {
     int idx2 = WINDOW_SIZE - 1;
@@ -252,7 +292,7 @@ void pubPosePX4(const Estimator &estimator, const std_msgs::Header &header)
             R = Quaterniond(qNew.getW(), qNew.getX(), qNew.getY(), qNew.getZ());  
         }
         geometry_msgs::PoseStamped ps;
-        ps.header = header;
+        ps.header.stamp = header.stamp;
         ps.header.frame_id = "world";
         ps.pose.position.x = P.x();
         ps.pose.position.y = P.y();
@@ -281,41 +321,6 @@ void pubPosePX4(const Estimator &estimator, const std_msgs::Header &header)
     }
 }
 
-
-void pubCameraPose(const Estimator &estimator, const std_msgs::Header &header)
-{
-    int idx2 = WINDOW_SIZE - 1;
-
-    if (estimator.solver_flag == Estimator::SolverFlag::NON_LINEAR)
-    {
-        int i = idx2;
-        Vector3d P = estimator.Ps[i] + estimator.Rs[i] * estimator.tic[0];
-        Quaterniond R = Quaterniond(estimator.Rs[i] * estimator.ric[0]);
-
-        nav_msgs::Odometry odometry;
-        odometry.header = header;
-        odometry.header.frame_id = "world";
-        odometry.pose.pose.position.x = P.x();
-        odometry.pose.pose.position.y = P.y();
-        odometry.pose.pose.position.z = P.z();
-        odometry.pose.pose.orientation.x = R.x();
-        odometry.pose.pose.orientation.y = R.y();
-        odometry.pose.pose.orientation.z = R.z();
-        odometry.pose.pose.orientation.w = R.w();
-
-        pub_camera_pose.publish(odometry);
-
-        cameraposevisual.reset();
-        cameraposevisual.add_pose(P, R);
-        if(STEREO)
-        {
-            Vector3d P = estimator.Ps[i] + estimator.Rs[i] * estimator.tic[1];
-            Quaterniond R = Quaterniond(estimator.Rs[i] * estimator.ric[1]);
-            cameraposevisual.add_pose(P, R);
-        }
-        cameraposevisual.publish_by(pub_camera_pose_visual, odometry.header);
-    }
-}
 
 
 void pubPointCloud(const Estimator &estimator, const std_msgs::Header &header)

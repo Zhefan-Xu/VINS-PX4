@@ -1,7 +1,0 @@
-<launch>
-	<node name="vins_estimator" pkg="vins" type="vins_node" output="screen" args="$(find vins)/../config/realsense_d435i/realsense_stereo_imu_config.yaml"/>
-
-	<!-- <node name="vins_estimator" pkg="vins" type="vins_node" output="screen" args="$(find vins)/../config/realsense_d435i/realsense_stereo_FC_imu_config.yaml"/> -->
-
-        <!-- <node name="loop_fusion" pkg="loop_fusion" type="loop_fusion_node" output="screen" args="$(find vins)/../config/realsense_d435i/realsense_stereo_imu_config.yaml"/> -->
-</launch>
