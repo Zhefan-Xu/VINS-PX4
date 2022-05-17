@@ -2,6 +2,8 @@
 	<!-- vins fusion -->
 	<include file="$(find vins)/launch/vins_stereo_d435i.launch" />
 
+	<node pkg="topic_tools" type="throttle" name="throttle" args="messages /mavros/vision_pose/pose_raw 40 /mavros/vision_pose/pose" />
+
   	<node pkg="tf" type="static_transform_publisher" name="map_odom"
           args="0 0 0 0 0 0 map odom 1000"/>
 
