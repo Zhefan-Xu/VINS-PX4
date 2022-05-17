@@ -97,6 +97,7 @@ void Estimator::inputIMU(double t, const Vector3d &linearAcceleration, const Vec
     fastPredictIMU(t, linearAcceleration, angularVelocity);
     if (solver_flag == NON_LINEAR){
         pubLatestOdometry(latest_P, latest_Q, latest_V, t);
+        pubPosePX4Raw(latest_P, latest_Q, t);
     }
 }
 
@@ -215,7 +216,7 @@ void Estimator::processMeasurements()
             pubOdometry(*this, header);
             pubKeyPoses(*this, header);
             pubCameraPose(*this, header);
-            pubPosePX4(*this, header);
+            // pubPosePX4(*this, header);
             pubPointCloud(*this, header);
             pubKeyframe(*this);
             pubTF(*this, header);

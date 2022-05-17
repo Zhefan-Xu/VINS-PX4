@@ -2,6 +2,8 @@
 	<!-- vins fusion -->
 	<include file="$(find vins)/launch/vins_color_d435i.launch" />
 
+	<node pkg="topic_tools" type="throttle" name="throttle" args="messages /mavros/vision_pose/pose_raw 40 /mavros/vision_pose/pose" />
+
   	<node pkg="tf" type="static_transform_publisher" name="map_odom"
           args="0 0 0 0 0 0 map odom 1000"/>
 
@@ -12,7 +14,7 @@
 		args="0 0 0 0 0 0 body_px4 base_link 1000" />
 
 	<node pkg="tf" type="static_transform_publisher" name="baselink_cameralink"
-		args="0.07 0.015 0.10 0 0 0 base_link camera_link 1000" />
+		args="0.06 0.015 0.03 0 0 0 base_link camera_link 1000" />
 
 	<node pkg="vins" type="vis_traj.py" name="vis_traj" />
 
