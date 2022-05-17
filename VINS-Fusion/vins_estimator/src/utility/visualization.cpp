@@ -12,11 +12,12 @@
 using namespace ros;
 using namespace Eigen;
 ros::Publisher pub_odometry, pub_latest_odometry;
+ros::Publisher pub_pose_px4_raw;
 ros::Publisher pub_path;
 ros::Publisher pub_point_cloud, pub_margin_cloud;
 ros::Publisher pub_key_poses;
 ros::Publisher pub_camera_pose;
-ros::Publisher pub_pose_px4;
+// ros::Publisher pub_pose_px4;
 ros::Publisher pub_camera_pose_visual;
 nav_msgs::Path path;
 
@@ -35,13 +36,14 @@ size_t pub_counter = 0;
 void registerPub(ros::NodeHandle &n)
 {
     pub_latest_odometry = n.advertise<nav_msgs::Odometry>("imu_propagate", 1000);
+    pub_pose_px4_raw = n.advertise<geometry_msgs::PoseStamped>("/mavros/vision_pose/pose_raw", 100);
     pub_path = n.advertise<nav_msgs::Path>("path", 1000);
     pub_odometry = n.advertise<nav_msgs::Odometry>("odometry", 1000);
     pub_point_cloud = n.advertise<sensor_msgs::PointCloud>("point_cloud", 1000);
     pub_margin_cloud = n.advertise<sensor_msgs::PointCloud>("margin_cloud", 1000);
     pub_key_poses = n.advertise<visualization_msgs::Marker>("key_poses", 1000);
     pub_camera_pose = n.advertise<nav_msgs::Odometry>("camera_pose", 1000);
-    pub_pose_px4 = n.advertise<geometry_msgs::PoseStamped>("/mavros/vision_pose/pose", 100);
+    // pub_pose_px4 = n.advertise<geometry_msgs::PoseStamped>("/mavros/vision_pose/pose", 100);
     pub_camera_pose_visual = n.advertise<visualization_msgs::MarkerArray>("camera_pose_visual", 1000);
     pub_keyframe_pose = n.advertise<nav_msgs::Odometry>("keyframe_pose", 1000);
     pub_keyframe_point = n.advertise<sensor_msgs::PointCloud>("keyframe_point", 1000);
@@ -70,7 +72,32 @@ void pubLatestOdometry(const Eigen::Vector3d &P, const Eigen::Quaterniond &Q, co
     pub_latest_odometry.publish(odometry);
 }
 
+void pubPosePX4Raw(const Eigen::Vector3d &P, const Eigen::Quaterniond &Q, double t){
+    geometry_msgs::PoseStamped ps;
+    ps.header.stamp = ros::Time(t);
+    ps.header.frame_id = "world";
+    ps.pose.position.x = P.x();
+    ps.pose.position.y = P.y();
+    ps.pose.position.z = P.z();
+    ps.pose.orientation.x = Q.x();
+    ps.pose.orientation.y = Q.y();
+    ps.pose.orientation.z = Q.z();
+    ps.pose.orientation.w = Q.w();
+    pub_pose_px4_raw.publish(ps);
 
+    static tf::TransformBroadcaster br;
+    tf::Transform transform;
+    tf::Quaternion q;
+    transform.setOrigin(tf::Vector3(P.x(),
+                                    P.y(),
+                                    P.z()));
+    q.setW(Q.w());
+    q.setX(Q.x());
+    q.setY(Q.y());
+    q.setZ(Q.z());
+    transform.setRotation(q);
+    br.sendTransform(tf::StampedTransform(transform, ros::Time(t), "world", "body_px4"));
+}
 
 
 void pubTrackImage(const cv::Mat &imgTrack, const double t)
@@ -251,75 +278,75 @@ void pubCameraPose(const Estimator &estimator, const std_msgs::Header &header)
     }
 }
 
-void pubPosePX4(const Estimator &estimator, const std_msgs::Header &header)
-{
-    int idx2 = WINDOW_SIZE - 1;
+// void pubPosePX4(const Estimator &estimator, const std_msgs::Header &header)
+// {
+//     int idx2 = WINDOW_SIZE - 1;
 
-    if (estimator.solver_flag == Estimator::SolverFlag::NON_LINEAR)
-    {
-        int i = idx2;
-        Vector3d P = estimator.Ps[i] + estimator.Rs[i] * estimator.tic[0];
-        Quaterniond R = Quaterniond(estimator.Rs[i] * estimator.ric[0]);
+//     if (estimator.solver_flag == Estimator::SolverFlag::NON_LINEAR)
+//     {
+//         int i = idx2;
+//         Vector3d P = estimator.Ps[i] + estimator.Rs[i] * estimator.tic[0];
+//         Quaterniond R = Quaterniond(estimator.Rs[i] * estimator.ric[0]);
 
-        if (IMU_TOPIC == "/camera/imu"){
-            // // We need to rotate the quaternion by 90 degree in x axis
-            tf2::Quaternion qRot;
-            tf2::Quaternion qTF (R.x(), R.y(), R.z(), R.w());
-            qRot.setRPY(1.5707, -1.5707, 0);
-            tf2::Quaternion qNew = qTF * qRot;
-            R = Quaterniond(qNew.getW(), qNew.getX(), qNew.getY(), qNew.getZ());  
+//         if (IMU_TOPIC == "/camera/imu"){
+//             // // We need to rotate the quaternion by 90 degree in x axis
+//             tf2::Quaternion qRot;
+//             tf2::Quaternion qTF (R.x(), R.y(), R.z(), R.w());
+//             qRot.setRPY(1.5707, -1.5707, 0);
+//             tf2::Quaternion qNew = qTF * qRot;
+//             R = Quaterniond(qNew.getW(), qNew.getX(), qNew.getY(), qNew.getZ());  
 
-            tf2::Quaternion qRot2;
-            tf2::Quaternion qTF2 (R.x(), R.y(), R.z(), R.w());
-            qRot2.setRPY(0, 0, -1.5707);
-            tf2::Quaternion qNew2 = qRot2 * qTF2;
-            R = Quaterniond(qNew2.getW(), qNew2.getX(), qNew2.getY(), qNew2.getZ());               
+//             tf2::Quaternion qRot2;
+//             tf2::Quaternion qTF2 (R.x(), R.y(), R.z(), R.w());
+//             qRot2.setRPY(0, 0, -1.5707);
+//             tf2::Quaternion qNew2 = qRot2 * qTF2;
+//             R = Quaterniond(qNew2.getW(), qNew2.getX(), qNew2.getY(), qNew2.getZ());               
 
-            // // // we need to rotate the position by -90 degree in z axis
-            tf2::Transform qTransPos;
-            tf2::Quaternion qRotPos;
-            qRotPos.setRPY(0, 0, -1.5707);
-            qTransPos.setRotation(qRotPos);
-            tf2::Vector3 pTF (P.x(), P.y(), P.z());
-            tf2::Vector3 pTFRot = qTransPos * pTF;
-            P = Vector3d (pTFRot.getX(), pTFRot.getY(), pTFRot.getZ());
-        }
-        else{
-            tf2::Quaternion qRot;
-            tf2::Quaternion qTF (R.x(), R.y(), R.z(), R.w());
-            qRot.setRPY(1.5707, -1.5707, 0);
-            tf2::Quaternion qNew = qTF * qRot;
-            R = Quaterniond(qNew.getW(), qNew.getX(), qNew.getY(), qNew.getZ());  
-        }
-        geometry_msgs::PoseStamped ps;
-        ps.header.stamp = header.stamp;
-        ps.header.frame_id = "world";
-        ps.pose.position.x = P.x();
-        ps.pose.position.y = P.y();
-        ps.pose.position.z = P.z();
-        ps.pose.orientation.x = R.x();
-        ps.pose.orientation.y = R.y();
-        ps.pose.orientation.z = R.z();
-        ps.pose.orientation.w = R.w();
+//             // // // we need to rotate the position by -90 degree in z axis
+//             tf2::Transform qTransPos;
+//             tf2::Quaternion qRotPos;
+//             qRotPos.setRPY(0, 0, -1.5707);
+//             qTransPos.setRotation(qRotPos);
+//             tf2::Vector3 pTF (P.x(), P.y(), P.z());
+//             tf2::Vector3 pTFRot = qTransPos * pTF;
+//             P = Vector3d (pTFRot.getX(), pTFRot.getY(), pTFRot.getZ());
+//         }
+//         else{
+//             tf2::Quaternion qRot;
+//             tf2::Quaternion qTF (R.x(), R.y(), R.z(), R.w());
+//             qRot.setRPY(1.5707, -1.5707, 0);
+//             tf2::Quaternion qNew = qTF * qRot;
+//             R = Quaterniond(qNew.getW(), qNew.getX(), qNew.getY(), qNew.getZ());  
+//         }
+//         geometry_msgs::PoseStamped ps;
+//         ps.header.stamp = header.stamp;
+//         ps.header.frame_id = "world";
+//         ps.pose.position.x = P.x();
+//         ps.pose.position.y = P.y();
+//         ps.pose.position.z = P.z();
+//         ps.pose.orientation.x = R.x();
+//         ps.pose.orientation.y = R.y();
+//         ps.pose.orientation.z = R.z();
+//         ps.pose.orientation.w = R.w();
 
-        pub_pose_px4.publish(ps);
+//         pub_pose_px4.publish(ps);
     
 
-        static tf::TransformBroadcaster br;
-        tf::Transform transform;
-        tf::Quaternion q;
-        transform.setOrigin(tf::Vector3(P.x(),
-                                        P.y(),
-                                        P.z()));
-        q.setW(R.w());
-        q.setX(R.x());
-        q.setY(R.y());
-        q.setZ(R.z());
-        transform.setRotation(q);
-        br.sendTransform(tf::StampedTransform(transform, header.stamp, "world", "body_px4"));
+//         static tf::TransformBroadcaster br;
+//         tf::Transform transform;
+//         tf::Quaternion q;
+//         transform.setOrigin(tf::Vector3(P.x(),
+//                                         P.y(),
+//                                         P.z()));
+//         q.setW(R.w());
+//         q.setX(R.x());
+//         q.setY(R.y());
+//         q.setZ(R.z());
+//         transform.setRotation(q);
+//         br.sendTransform(tf::StampedTransform(transform, header.stamp, "world", "body_px4"));
 
-    }
-}
+//     }
+// }
 
 
 

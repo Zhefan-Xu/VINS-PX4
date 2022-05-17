@@ -209,6 +209,7 @@ void Estimator::inputIMU(double t, const Vector3d &linearAcceleration, const Vec
         mPropagate.lock();
         fastPredictIMU(t, linearAcceleration, angularVelocity);
         pubLatestOdometry(latest_P, latest_Q, latest_V, t);
+        pubPosePX4Raw(latest_P, latest_Q, t);
         mPropagate.unlock();
     }
 }
@@ -327,7 +328,7 @@ void Estimator::processMeasurements()
             pubOdometry(*this, header);
             pubKeyPoses(*this, header);
             pubCameraPose(*this, header);
-            pubPosePX4(*this, header);
+            // pubPosePX4(*this, header);
             pubPointCloud(*this, header);
             pubKeyframe(*this);
             pubTF(*this, header);
