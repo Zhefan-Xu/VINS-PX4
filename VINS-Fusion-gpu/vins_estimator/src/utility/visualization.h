@@ -44,6 +44,7 @@ void registerPub(ros::NodeHandle &n);
 
 void pubLatestOdometry(const Eigen::Vector3d &P, const Eigen::Quaterniond &Q, const Eigen::Vector3d &V, double t);
 
+void pubPosePX4Raw(const Eigen::Vector3d &P, const Eigen::Quaterniond &Q, double t);
 
 void printStatistics(const Estimator &estimator, double t);
 
@@ -55,7 +56,7 @@ void pubKeyPoses(const Estimator &estimator, const std_msgs::Header &header);
 
 void pubCameraPose(const Estimator &estimator, const std_msgs::Header &header);
 
-void pubPosePX4(const Estimator &estimator, const std_msgs::Header &header);
+// void pubPosePX4(const Estimator &estimator, const std_msgs::Header &header);
 
 void pubPointCloud(const Estimator &estimator, const std_msgs::Header &header);
 

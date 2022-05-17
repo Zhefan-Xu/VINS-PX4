@@ -24,9 +24,9 @@ body_T_cam0: !!opencv-matrix
  rows: 4
  cols: 4
  dt: d
- data: [ 0.03812613,  0.01368781,  0.99917918,  0.00001931,
-        -0.9985525 , -0.0374402 ,  0.03861512, -0.00004333,
-         0.03793803, -0.99920512,  0.01224055,  0.00041535,
+ data: [ 0.00123941,  -0.02075304,  0.99978386, -0.00000499,
+        -0.996118,     0.08797476,  0.003061,   -0.00042884,
+        -0.08801927,  -0.9959065,  -0.02056344, -0.00033922,
          0.        ,  0.        ,  0.        ,  1.        ]
          
 
@@ -44,7 +44,7 @@ show_track: 0           # publish tracking image as topic
 flow_back: 1            # perform forward and backward optical flow to improve feature tracking accuracy
 
 #optimization parameters
-max_solver_time: 0.04  # max solver itration time (ms), to guarantee real time
+max_solver_time: 0.025  # max solver itration time (ms), to guarantee real time
 max_num_iterations: 8   # max solver itrations, to guarantee real time
 keyframe_parallax: 10.0 # keyframe selection threshold (pixel)
 
