@@ -16,6 +16,4 @@
 	<node pkg="tf" type="static_transform_publisher" name="baselink_cameralink"
 		args="0.06 0.015 0.03 0 0 0 base_link camera_link 1000" />
 
-	<node pkg="vins" type="vis_traj.py" name="vis_traj" />
-
 </launch>
